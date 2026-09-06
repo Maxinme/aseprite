@@ -1,23 +1,40 @@
-name: C/C++ CI
+name: Build Aseprite
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: windows-2022
 
     steps:
-    - uses: actions/checkout@v4
-    - name: configure
-      run: ./configure
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+      - name: Checkout Aseprite
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Ninja
+        run: choco install ninja -y
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake -G Ninja `
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+            -DLAF_WITH_SKIA=ON `
+            ..
+
+      - name: Build
+        run: |
+          cd build
+          ninja aseprite
+
+      - name: Upload Aseprite
+        uses: actions/upload-artifact@v4
+        with:
+          name: aseprite-windows
+          path: build/bin/aseprite.exe
